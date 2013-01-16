@@ -27,9 +27,16 @@ module BetterErrors
     # 
     # @param app      The Rack app/middleware to wrap with Better Errors
     # @param handler  The error handler to use.
-    def initialize(app, handler = ErrorPage)
-      @app      = app
-      @handler  = handler
+    def initialize(app, opts = {})
+      @app = app
+      if opts.is_a?(Class)
+        @handler = opts
+        opts = {}
+      else
+        @handler = opts[:handler] || ErrorPage
+      end
+      @except = *(opts[:except])
+      @except << EXCEPT_XHR if opts[:skip_xhr]
     end
     
     # Calls the Better Errors middleware
@@ -47,6 +54,7 @@ module BetterErrors
   private
     IPV4_LOCAL = IPAddr.new("127.0.0.0/8")
     IPV6_LOCAL = IPAddr.new("::1/128")
+    EXCEPT_XHR = proc { |env| env['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest' }
 
     def local_request?(env)
       # REMOTE_ADDR is not in the rack spec, so some application servers do
@@ -70,6 +78,7 @@ module BetterErrors
     def protected_app_call(env)
       @app.call env
     rescue Exception => ex
+      raise if @except.any? { |c| c.call(env, ex) }
       @error_page = @handler.new ex, env
       log_exception
       show_error_page(env)

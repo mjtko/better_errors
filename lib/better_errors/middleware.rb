@@ -7,8 +7,17 @@ module BetterErrors
   # middleware.
   # 
   # If you are using Ruby on Rails, you do not need to manually insert this 
-  # middleware into your middleware stack.
-  # 
+  # middleware into your middleware stack to use it with its default options.
+  # If you wish to configure the middleware, an initializer in
+  # application.rb to set middleware options is required:
+  #
+  # @example Rails
+  #    config.before_initialize do
+  #      unless Rails.env.production?
+  #        BetterErrors.middleware_opts = {:handler => MyErrorPage}
+  #      end
+  #    end
+  #
   # @example Sinatra
   #   require "better_errors"
   # 
@@ -26,10 +35,12 @@ module BetterErrors
     # A new instance of BetterErrors::Middleware
     # 
     # @param app      The Rack app/middleware to wrap with Better Errors
-    # @param handler  The error handler to use.
-    def initialize(app, opts = {})
+    # @param opts     [Hash] containing options for configuration of the middleware
+    def initialize(app, opts = BetterErrors.middleware_opts)
+      opts ||= {}
       @app = app
       if opts.is_a?(Class)
+        warn "[DEPRECATION] Passing a Class for an error page handler is deprecated.  Please use the `:handler` key in an options Hash instead. (called from: #{Kernel.caller.first})"
         @handler = opts
         opts = {}
       else

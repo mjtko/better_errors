@@ -27,6 +27,11 @@ module BetterErrors
     # @return [Logger, nil]
     attr_accessor :logger
 
+    # The default options to use when constructing the middleware.
+    # 
+    # @return [Hash, nil]
+    attr_accessor :middleware_opts
+
     # @private
     attr_accessor :binding_of_caller_available
     
